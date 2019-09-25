@@ -1,0 +1,36 @@
+{
+  "name": "golog",
+  "version": "0.1.0",
+  "description": "A light-weight heavily inspired logging library",
+  "main": "lib/main.js",
+  "author": "Guilherme C. Souza",
+  "license": "MIT",
+  "homepage": "https://gitlab.com/GCSBOSS/golog#readme",
+  "bugs": {
+    "url": "https://gitlab.com/GCSBOSS/golog/issues"
+  },
+  "scripts": {
+    "test": "mocha -b --no-diff test/*.js",
+    "coverage": "nyc -r html -r text-summary mocha -b --no-diff --no-warnings test/*.js"
+  },
+  "devDependencies": {
+    "memorystream": "^0.3.1",
+    "tempper": "^0.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/GCSBOSS/golog.git"
+  },
+  "keywords": [
+    "json",
+    "pretty",
+    "simlpe",
+    "log",
+    "bunyan",
+    "logging",
+    "debug",
+    "file",
+    "stream",
+    "format"
+  ]
+}
