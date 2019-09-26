@@ -190,3 +190,16 @@ describe('Options', function(){
     });
 
 });
+
+describe('Regression', function(){
+
+    beforeEach(function(){
+        log = new Logger();
+        log.addStream('mem', stream);
+    });
+
+    it('Should not throw exception when error event not handled', function(){
+        log.error('bar');
+    });
+
+});
