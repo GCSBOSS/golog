@@ -1,6 +1,7 @@
 const MemoryStream = require('memorystream');
 const Tempper = require('tempper');
 const assert = require('assert');
+const fs = require('fs');
 
 const Logger = require('../lib/main');
 
@@ -200,6 +201,21 @@ describe('Regression', function(){
 
     it('Should not throw exception when error event not handled', function(){
         log.error('bar');
+    });
+
+    it('Should always append to files', function(done){
+        let tmp = new Tempper();
+        fs.writeFileSync('./test', 'abc');
+        log = new Logger({ file: './test' });
+        log.mode = 'minimal';
+        log.warn('hey');
+        log.streams.main.stream.end();
+        setTimeout(function(){
+            let data = fs.readFileSync('./test');
+            assert(/^abc.*\- warn \- hey/g.test(data.toString()));
+            tmp.clear();
+            done();
+        }, 1200);
     });
 
 });
