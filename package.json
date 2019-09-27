@@ -1,6 +1,6 @@
 {
   "name": "golog",
-  "version": "0.1.1",
+  "version": "0.1.1-beta-1",
   "description": "A light-weight heavily inspired logging library",
   "main": "lib/main.js",
   "author": "Guilherme C. Souza",
