@@ -1,7 +1,7 @@
 {
   "name": "golog",
-  "version": "0.1.2",
-  "description": "A light-weight heavily inspired logging library",
+  "version": "0.2.0",
+  "description": "A light-weight stdout logging library for NodeJS.",
   "main": "lib/main.js",
   "author": "Guilherme C. Souza",
   "license": "MIT",
@@ -13,24 +13,20 @@
     "test": "mocha -b --no-diff test/*.js",
     "coverage": "nyc -r html -r text-summary mocha -b --no-diff --no-warnings test/*.js"
   },
-  "devDependencies": {
-    "memorystream": "^0.3.1",
-    "tempper": "^0.1.1"
-  },
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/GCSBOSS/golog.git"
   },
   "keywords": [
-    "json",
-    "pretty",
-    "simlpe",
-    "log",
-    "bunyan",
     "logging",
+    "json",
     "debug",
-    "file",
-    "stream",
+    "env",
+    "parse",
+    "req",
+    "res",
+    "stdout",
+    "12factor",
     "format"
   ]
 }

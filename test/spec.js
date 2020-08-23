@@ -1,221 +1,115 @@
-const MemoryStream = require('memorystream');
-const Tempper = require('tempper');
 const assert = require('assert');
-const fs = require('fs');
-
 const Logger = require('../lib/main');
 
-var stream, log;
-
-beforeEach(function(){
-    stream = new MemoryStream();
-});
-
-describe('Setup', function(){
-
-    it('Should store the given stream to write log entries [#addStream]', function(){
-        log = new Logger();
-        log.addStream('foobar', stream);
-        assert.strictEqual(typeof log.streams.foobar, 'object');
-    });
-
-    it('Should create fs write stream from file path [#addFile]', function(done){
-        log = new Logger();
-        let tmp = new Tempper();
-        log.addFile('foobar', './foo.txt');
-        log.streams.foobar.stream.write('baz');
-        log.streams.foobar.stream.end();
-        setTimeout(function(){
-            tmp.assertExists('./foo.txt');
-            tmp.clear();
-            done();
-        }, 1000);
-    });
-
-    it('Should remove the given stream from the logger [#removeStream]', function(){
-        log = new Logger();
-        log.addStream('foobar', stream);
-        log.removeStream('foobar');
-        assert.strictEqual(typeof log.streams.foobar, 'undefined');
-    });
-
-});
+process.env.NODE_ENV = 'testing';
 
 describe('Logging', function(){
+    var log;
 
-    beforeEach(function(){
+    before(function(){
         log = new Logger();
-        log.addStream('mem', stream);
     });
 
-    it('Should log the given message as JSON', function(done){
-        stream.on('data', buf => {
-            assert.strictEqual(JSON.parse(buf.toString()).msg, 'bar');
-            done();
-        });
-        log.warn('bar');
+    it('Should log appropriate objects according to log level', function(){
+        assert.strictEqual(log.debug().level, 'debug');
+        assert.strictEqual(log.info().level, 'info');
+        assert.strictEqual(log.warn().level, 'warn');
+        assert.strictEqual(log.error().level, 'error');
+        assert.strictEqual(log.fatal().level, 'fatal');
     });
 
-    it('Should log additional data in the message as JSON', function(done){
-        stream.on('data', buf => {
-            let ent = JSON.parse(buf.toString());
-            assert.strictEqual(ent.msg, 'bar');
-            assert.strictEqual(ent.foo, 'baz');
-            done();
-        });
-        log.warn({ foo: 'baz' }, 'bar');
+    it('Should printf format message with input arguments', function(){
+        assert.strictEqual(log.debug('a b %s d %s', 'c', 'e').msg, 'a b c d e');
     });
 
-    it('Should not log when entry level is below logger level', function(done){
-        stream.on('data', done);
-        log.debug({ foo: 'baz' }, 'bar');
-        done();
+    it('Should assign first object argument properties to final log entry', function(){
+        let e = log.info({ a: 1, b: 2 });
+        assert.strictEqual(e.a, 1);
+        assert.strictEqual(e.b, 2);
     });
 
-    it('Should broadcast log entries to all streams', function(done){
-        let i = 0;
-        let test = () => i > 0 ? done() : i++;
-        stream.on('data', test);
-
-        let stream2 = new MemoryStream();
-        stream2.on('data', buf => {
-            assert.strictEqual(JSON.parse(buf.toString()).msg, 'barbaz');
-            test();
-        });
-        log.addStream('other', stream2);
-
-        log.warn('barbaz');
+    it('Should include entry type', function(){
+        assert.strictEqual(log.warn().type, 'event');
+        assert.strictEqual(log.error({ type: 'foobar' }).type, 'foobar');
     });
 
 });
 
-describe('Formatting', function(){
+describe('Auto-Parsing', function(){
 
-    beforeEach(function(){
-        log = new Logger();
-        log.addStream('mem', stream);
+    it('Should parse error objects', function(){
+        let log = new Logger();
+        assert(Array.isArray(log.warn({ err: new Error('Foobar') }).stack));
+        assert(Array.isArray(log.info({ err: 'My Error' }).stack));
     });
 
-    it('Should format message with input variables', function(done){
-        stream.on('data', buf => {
-            assert.strictEqual(JSON.parse(buf.toString()).msg, 'bar 1 cool');
-            done();
-        });
-        log.warn('bar %d %s', 1, 'cool');
+    const http = require('http');
+
+    it('Should parse http REQuest objects', function(){
+        let log = new Logger();
+        let req = http.request('http://example.com');
+        req.on('error', Function.prototype);
+        assert.strictEqual(log.warn({ req }).method, 'GET');
+        req.destroy();
     });
 
-    it('Should format error objects in the input data', function(done){
-        stream.on('data', buf => {
-            let out = JSON.parse(buf.toString());
-            assert.strictEqual(out.err.name, 'Error');
-            assert.strictEqual(out.msg, 'foo');
+    it('Should parse http RESponse objects', function(done){
+        let log = new Logger();
+        let req = http.request('http://example.com');
+        req.on('response', res => {
+            let e = log.info({ res });
+            assert.strictEqual(e.method, 'GET');
+            assert.strictEqual(e.status, 200);
+            assert.strictEqual(e.type, 'response');
             done();
         });
-        log.warn({ err: new Error() }, 'foo');
+        req.end();
     });
 
-    it('Should format http request objects in the input data', function(done){
-        const http = require('http');
-        const server = http.createServer(function(req, res){
-            res.end();
-            log.warn({ req: req }, 'foo');
-        });
-
-        stream.on('data', buf => {
-            let out = JSON.parse(buf.toString());
-            assert.strictEqual(out.req.host, 'localhost:8765');
-            assert.strictEqual(out.msg, 'foo');
-            server.close();
+    it('Should force level warn on 5xx response', function(done){
+        let log = new Logger();
+        let req = http.request('http://httpbin.org/status/500');
+        req.on('response', res => {
+            let e = log.info({ res });
+            assert.strictEqual(e.status, 500);
+            assert.strictEqual(e.level, 'warn');
             done();
         });
+        req.end();
+    });
 
-        server.listen(8765);
-        http.get('http://localhost:8765');
+    it('Should execute added parsers', function(){
+        let log = new Logger();
+        log.addParser(() => ({ foobar: true }));
+        let e = log.info();
+        assert(e.foobar);
     });
 
 });
 
 describe('Options', function(){
 
-    beforeEach(function(){
-        log = new Logger();
-        log.addStream('mem', stream);
+    it('Should not log when entry level is below conf level [level]', function(){
+        let log = new Logger({ level: 'error' });
+        assert(!log.warn());
     });
 
-    it('Should log only essential data when in minimal mode [mode = minimal]', function(done){
-        stream.on('data', buf => {
-            let ent = buf.toString();
-            assert(/\ \-\ warn\ \-\ bar/g.test(ent));
-            done();
-        });
-        log.mode = 'minimal';
-        log.warn({ foo: 'baz' }, 'bar');
+    it('Should not log anything when conf is FALSE', function(){
+        let log = new Logger(false);
+        assert(!log.debug());
     });
 
-    it('Should log readable JSON when in pretty mode [mode = pretty]', function(done){
-        stream.on('data', buf => {
-            let ent = buf.toString();
-            assert(/"level": "warn",[\n\r]+  "msg": "bar"/g.test(ent));
-            done();
-        });
-        log.mode = 'pretty';
-        log.warn({ foo: 'baz' }, 'bar');
+    it('Should only log selected types [only]', function(){
+        let log = new Logger({ only: 'a' });
+        assert(log.debug({ type: 'a' }));
+        assert(!log.debug({ type: 'b' }));
     });
 
-    it('Should not log when entry level is below stream level [stream.level]', function(done){
-        log.streams.mem.level = 'error';
-        stream.on('data', done);
-        log.on('warn', () => done());
-        log.warn({ foo: 'baz' }, 'bar');
-    });
-
-    it('Should add a single main file stream [file]', function(done){
-        let tmp = new Tempper();
-        log = new Logger({ file: './abc.txt' });
-        assert.strictEqual(typeof log.streams.main, 'object');
-        log.streams.main.stream.end();
-        setTimeout(function(){
-            tmp.assertExists('./abc.txt');
-            tmp.clear();
-            done();
-        }, 1400);
-    });
-
-    it('Should add a single main stream [stream]', function(done){
-        log = new Logger({ stream });
-        stream.on('data', buf => {
-            assert.strictEqual(JSON.parse(buf.toString()).msg, 'bar');
-            done();
-        });
-        log.warn('bar');
-    });
-
-});
-
-describe('Regression', function(){
-
-    beforeEach(function(){
-        log = new Logger();
-        log.addStream('mem', stream);
-    });
-
-    it('Should not throw exception when error event not handled', function(){
-        log.error('bar');
-    });
-
-    it('Should always append to files', function(done){
-        let tmp = new Tempper();
-        fs.writeFileSync('./test', 'abc');
-        log = new Logger({ file: './test' });
-        log.mode = 'minimal';
-        log.warn('hey');
-        log.streams.main.stream.end();
-        setTimeout(function(){
-            let data = fs.readFileSync('./test');
-            assert(/^abc.*\- warn \- hey/g.test(data.toString()));
-            tmp.clear();
-            done();
-        }, 1200);
+    it('Should not log filtered types [except]', function(){
+        let log = new Logger({ except: [ 'a', 'c' ] });
+        assert(!log.debug({ type: 'a' }));
+        assert(log.debug({ type: 'b' }));
+        assert(!log.debug({ type: 'c' }));
     });
 
 });
