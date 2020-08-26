@@ -1,6 +1,6 @@
 {
   "name": "golog",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A light-weight stdout logging library for NodeJS.",
   "main": "lib/main.js",
   "author": "Guilherme C. Souza",
