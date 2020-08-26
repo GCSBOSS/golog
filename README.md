@@ -34,12 +34,13 @@ log.fatal({ merge: 'this', object: 'with', the: 'entry' }, 'The MSG');
 
 ## Other Features
 
-If you have many loggers going to the same place rely on setting their source.
+You can set default properties to show up in every log entry for a given logge rinstance.
+For exemple we can use it to set a `source`.
 
 ```js
-var l1 = new GoLog({ app: 'log-a' });
+var l1 = new GoLog({ defaults: { source: 'app-a' } });
 l1.warn('Hey!');
-var l2 = new GoLog({ app: 'log-b' });
+var l2 = new GoLog({ defaults: { source: 'app-b' } });
 l2.warn('Ho!');
 ```
 
@@ -57,7 +58,7 @@ var log = new GoLog();
 
 let e1 = log.fatal('foo');
 let e2 = log.debug('bar');
-console.log(e1, e2)/
+console.log(e1, e2);
 ```
 
 If you want to log some information about an `Error` instance, just add it as a key to the data object.

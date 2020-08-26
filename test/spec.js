@@ -94,6 +94,13 @@ describe('Options', function(){
         assert(!log.warn());
     });
 
+    it('Should set defaults values for all entries [defaults]', function(){
+        let log = new Logger({ defaults: { a: 'foo', b: 'bar' } });
+        let e = log.info({ a: 1 });
+        assert.strictEqual(e.a, 1);
+        assert.strictEqual(e.b, 'bar');
+    });
+
     it('Should not log anything when conf is FALSE', function(){
         let log = new Logger(false);
         assert(!log.debug());
