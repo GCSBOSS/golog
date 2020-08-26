@@ -45,12 +45,17 @@ describe('Auto-Parsing', function(){
 
     const http = require('http');
 
-    it('Should parse http REQuest objects', function(){
+    it('Should parse http REQuest objects', function(done){
         let log = new Logger();
-        let req = http.request('http://example.com');
-        req.on('error', Function.prototype);
-        assert.strictEqual(log.warn({ req }).method, 'GET');
-        req.destroy();
+        let server = http.createServer(function(req, res){
+            let e = log.info({ req });
+            assert.strictEqual(e.method, 'GET');
+            done();
+            res.end();
+            server.close();
+        });
+        server.listen(6743);
+        http.request('http://localhost:6743').end();
     });
 
     it('Should parse http RESponse objects', function(done){
