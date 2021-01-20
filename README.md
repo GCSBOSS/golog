@@ -1,6 +1,6 @@
 # [GoLog](https://gitlab.com/GCSBOSS/golog)
 
-A light-weight stdout logging library for NodeJS. Checkout the main features:
+A light-weight stdout logging library for NodeJS and [Deno](https://deno.land). Checkout the main features:
 
 - JSON output by default
 - Automatic readable output format for dev environments
@@ -10,13 +10,22 @@ A light-weight stdout logging library for NodeJS. Checkout the main features:
 - Automatic pid field on log entries.
 - Log entries filtering by level or type (whitelist, blacklist)
 
-## Get Started
+## Get Started NodeJS
 
 1. Install with: `npm i -P golog`.
 2. Setup a logger:
 
 ```js
 const GoLog = require('require');
+
+// Crate a new logger.
+var log = new GoLog();
+```
+
+## Get Started [Deno](https://deno.land)
+
+```js
+import GoLog from 'https://deno.land/x/golog@v0.4.0';
 
 // Crate a new logger.
 var log = new GoLog();
