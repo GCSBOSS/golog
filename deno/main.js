@@ -6,32 +6,32 @@ const LEVELS = {
     warn: { w: 2, c: '\x1b[33m' },
     error: { w: 3, c: '\x1b[31m' },
     fatal: { w: 4, c: '\x1b[41;5;1m' }
-};
+}
 
 function output(entry){
-    let env = Deno.env.get('NODE_ENV');
+    const env = Deno.env.get('NODE_ENV')
 
     // Output friendly log for dev or undfined env
     /* istanbul ignore next */
     if(!env || env === 'development'){
-        let uword = (entry.type == 'event' ? entry.level : entry.type).toUpperCase();
-        entry.time.setMinutes(entry.time.getMinutes() - entry.time.getTimezoneOffset());
-        let utime = entry.time.toISOString().slice(11, -5);
-        console.log(LEVELS[entry.level].c + utime + ': ' + uword + ' - ' + entry.msg + '\x1b[0m');
+        const uword = (entry.type == 'event' ? entry.level : entry.type).toUpperCase()
+        entry.time.setMinutes(entry.time.getMinutes() - entry.time.getTimezoneOffset())
+        const utime = entry.time.toISOString().slice(11, -5)
+        console.log(LEVELS[entry.level].c + utime + ': ' + uword + ' - ' + entry.msg + '\x1b[0m')
     }
 
     // Output complete JSON log for production and staging
     /* istanbul ignore next */
     else if(env !== 'testing')
-        console.log(JSON.stringify(entry));
+        console.log(JSON.stringify(entry))
 }
 
 function parseErr({ err }){
     if(!(err instanceof Error))
-        err = new Error(err);
+        err = new Error(err)
 
-    let stack = err.stack.split(/[\r\n]+\s*/g);
-    let env = Deno.env.get('NODE_ENV');
+    const stack = err.stack.split(/[\r\n]+\s*/g)
+    const env = Deno.env.get('NODE_ENV')
 
     return {
         err: null,
@@ -46,7 +46,7 @@ function parseErr({ err }){
 }
 
 function parseReq({ req }){
-    let path = req.path || req.url;
+    const path = req.path || req.url
     return {
         req: null,
         method: req.method,
@@ -59,7 +59,7 @@ function parseReq({ req }){
 }
 
 function parseRes({ res }){
-    let req = res.req ? parseReq({ req: res.req }) : {};
+    const req = res.req ? parseReq({ req: res.req }) : {}
     return {
         res: null,
         ...req,
@@ -71,57 +71,57 @@ function parseRes({ res }){
 }
 
 function getEntry(level, args){
-    let data = typeof args[0] == 'object' ? args.shift() : {};
-    args[0] = args[0] || '';
-    let msg = sprintf(...args);
+    const data = typeof args[0] == 'object' ? args.shift() : {}
+    args[0] = args[0] || ''
+    let msg = sprintf(...args)
 
-    let type = data.type || 'event';
+    const type = data.type || 'event'
 
     /* istanbul ignore next */
-    let pid = Deno.pid != 1 ? Deno.pid : null;
+    const pid = Deno.pid != 1 ? Deno.pid : null
 
-    for(let key in this.parsers)
-        key in data && Object.assign(data, this.parsers[key](data));
+    for(const key in this.parsers)
+        key in data && Object.assign(data, this.parsers[key](data))
 
-    msg = msg || data.msg;
-    return { level, type, ...data, msg, pid, time: new Date() };
+    msg = msg || data.msg
+    return { level, type, ...data, msg, pid, time: new Date() }
 }
 
 function log(level, ...args){
-    let entry = {
+    const entry = {
         ...this.conf.defaults,
         ...getEntry.call(this, level, args)
-    };
+    }
 
-    let badLevel = LEVELS[this.conf.level].w > LEVELS[level].w;
-    let badType = this.conf.except.has(entry.type) ||
-        this.conf.only.size > 0 && !this.conf.only.has(entry.type);
+    const badLevel = LEVELS[this.conf.level].w > LEVELS[level].w
+    const badType = this.conf.except.has(entry.type) ||
+        this.conf.only.size > 0 && !this.conf.only.has(entry.type)
     if(badType || badLevel)
-        return false;
+        return false
 
-    output(entry);
+    output(entry)
 
-    return entry;
+    return entry
 }
 
 export default class GoLog {
 
     constructor(conf = {}){
-        this.conf = conf || {};
-        this.conf.level = conf.level || 'debug';
-        this.conf.only = new Set([].concat(conf.only).filter(a => a));
-        this.conf.except = new Set([].concat(conf.except).filter(a => a));
-        this.conf.defaults = conf.defaults || {};
+        this.conf = conf || {}
+        this.conf.level = conf.level || 'debug'
+        this.conf.only = new Set([].concat(conf.only).filter(a => a))
+        this.conf.except = new Set([].concat(conf.except).filter(a => a))
+        this.conf.defaults = conf.defaults || {}
         this.parsers = { err: parseErr, req: parseReq, res: parseRes }
 
-        let op = conf === false ? () => false : log;
+        const op = conf === false ? () => false : log
 
-        for(let l in LEVELS)
-            this[l] = op.bind(this, l);
+        for(const l in LEVELS)
+            this[l] = op.bind(this, l)
     }
 
     addParser(key, parser){
-        this.parsers[key] = parser;
+        this.parsers[key] = parser
     }
 
-};
+}
