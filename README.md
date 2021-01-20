@@ -25,7 +25,7 @@ var log = new GoLog();
 ## Get Started [Deno](https://deno.land)
 
 ```js
-import GoLog from 'https://deno.land/x/golog@v0.4.0/deno/main.js';
+import GoLog from 'https://deno.land/x/golog@v0.4.0-0/deno/main.js';
 
 // Crate a new logger.
 var log = new GoLog();
