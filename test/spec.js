@@ -85,8 +85,8 @@ describe('Auto-Parsing', function(){
 
     it('Should execute added parsers', function(){
         let log = new Logger();
-        log.addParser(() => ({ foobar: true }));
-        let e = log.info();
+        log.addParser('thing', () => ({ foobar: true }));
+        let e = log.info({ thing: {} });
         assert(e.foobar);
     });
 
