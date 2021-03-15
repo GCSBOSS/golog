@@ -51,8 +51,8 @@ function parseReq({ req }){
         req: null,
         method: req.method,
         path,
-        host: req.headers.host,
-        agent: req.headers['user-agent'],
+        host: req.host,
+        agent: req['user-agent'],
         type: 'request',
         msg: 'Received ' + req.method + ' request to ' + path
     }
@@ -73,7 +73,7 @@ function parseRes({ res }){
 function getEntry(level, args){
     const data = typeof args[0] == 'object' ? args.shift() : {}
     args[0] = args[0] || ''
-    let msg = sprintf(...args)
+    let msg = sprintf(...args.map(a => String(a)))
 
     const type = data.type || 'event'
 
