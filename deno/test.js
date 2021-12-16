@@ -1,9 +1,9 @@
 
-import Logger from './main.js'
+import Logger from './main.ts'
 import { assert, assertEquals } from 'https://deno.land/std/testing/asserts.ts'
 import { serve } from 'https://deno.land/std@0.83.0/http/server.ts'
 
-Deno.env.set('NODE_ENV', 'testing')
+Deno.env.set('ENV', 'testing')
 
 var log = new Logger()
 
@@ -36,53 +36,6 @@ Deno.test('Auto-Parsing - Should parse error objects', function(){
     assert(Array.isArray(log.info({ err: 'My Error' }).stack))
 })
 
-Deno.test('Auto-Parsing - Should parse http REQuest objects', async function(){
-    let log = new Logger()
-    let srv = serve({ port: 8008 })
-    let p1 = srv[Symbol.asyncIterator]().next()
-    let p2 = fetch('http://localhost:8008')
-    let { value: req } = await p1
-    await req.respond({})
-    let res = await p2
-    await res.body?.cancel()
-    let e = log.info({ req })
-    assertEquals(e.method, 'GET')
-    srv.close()
-})
-
-Deno.test('Auto-Parsing - Should parse http RESponse objects', async function(){
-    let log = new Logger()
-    let srv = serve({ port: 8008 })
-    let p1 = srv[Symbol.asyncIterator]().next()
-    let p2 = fetch('http://localhost:8008')
-    let { value: req } = await p1
-    await req.respond({})
-    let res = await p2
-    await res.body?.cancel()
-    res.req = req
-    let e = log.info({ res })
-    assertEquals(e.method, 'GET')
-    assertEquals(e.status, 200)
-    assertEquals(e.type, 'response')
-    srv.close()
-})
-
-Deno.test('Auto-Parsing - Should force level warn on 5xx response', async function(){
-    let log = new Logger()
-    let srv = serve({ port: 8008 })
-    let p1 = srv[Symbol.asyncIterator]().next()
-    let p2 = fetch('http://localhost:8008')
-    let { value: req } = await p1
-    await req.respond({ status: 500 })
-    let res = await p2
-    await res.body?.cancel()
-    res.req = req
-    let e = log.info({ res })
-    assertEquals(e.status, 500)
-    assertEquals(e.level, 'warn')
-    srv.close()
-})
-
 Deno.test('Auto-Parsing - Should execute added parsers', function(){
     let log = new Logger()
     log.addParser('foo', () => ({ foobar: true }))
@@ -91,8 +44,7 @@ Deno.test('Auto-Parsing - Should execute added parsers', function(){
 })
 
 Deno.test('Options - Should not log when entry level is below conf level [level]', function(){
-    let log = new Logger({ level: 'error' })
-    assert(!log.warn())
+    assert(!new Logger({ level: 'error' }).warn())
 })
 
 Deno.test('Options - Should set defaults values for all entries [defaults]', function(){
@@ -103,8 +55,7 @@ Deno.test('Options - Should set defaults values for all entries [defaults]', fun
 })
 
 Deno.test('Options - Should not log anything when conf is FALSE', function(){
-    let log = new Logger(false)
-    assert(!log.debug())
+    assert(!new Logger(false).debug())
 })
 
 Deno.test('Options - Should only log selected types [only]', function(){
