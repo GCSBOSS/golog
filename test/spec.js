@@ -43,46 +43,6 @@ describe('Auto-Parsing', function(){
         assert(Array.isArray(log.info({ err: 'My Error' }).stack));
     });
 
-    const http = require('http');
-
-    it('Should parse http REQuest objects', function(done){
-        let log = new Logger();
-        let server = http.createServer(function(req, res){
-            let e = log.info({ req });
-            assert.strictEqual(e.method, 'GET');
-            done();
-            res.end();
-            server.close();
-        });
-        server.listen(6743);
-        http.request('http://localhost:6743').end();
-    });
-
-    it('Should parse http RESponse objects', function(done){
-        let log = new Logger();
-        let req = http.request('http://example.com');
-        req.on('response', res => {
-            let e = log.info({ res });
-            assert.strictEqual(e.method, 'GET');
-            assert.strictEqual(e.status, 200);
-            assert.strictEqual(e.type, 'response');
-            done();
-        });
-        req.end();
-    });
-
-    it('Should force level warn on 5xx response', function(done){
-        let log = new Logger();
-        let req = http.request('http://httpbin.org/status/500');
-        req.on('response', res => {
-            let e = log.info({ res });
-            assert.strictEqual(e.status, 500);
-            assert.strictEqual(e.level, 'warn');
-            done();
-        });
-        req.end();
-    });
-
     it('Should execute added parsers', function(){
         let log = new Logger();
         log.addParser('thing', () => ({ foobar: true }));
