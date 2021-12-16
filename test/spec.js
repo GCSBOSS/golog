@@ -125,3 +125,13 @@ describe('Options', function(){
     });
 
 });
+
+describe('Regressions', function(){
+
+    it('Should not modify the input config', function(){
+        const conf = { only: [ 'a' ] };
+        new Logger(conf);
+        assert(!(conf.only instanceof Set));
+    });
+
+});
