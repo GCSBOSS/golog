@@ -38,7 +38,7 @@ test-node:
     - npm run coverage
 
 lint-deno:
- image: hayd/ubuntu-deno:1.6.2
+ image: denoland/deno:alpine
  stage: test
  tags:
    - docker
@@ -48,13 +48,13 @@ lint-deno:
 
 test-deno:
   coverage: '/(\d+\.\d+\%)/'
-  image: hayd/ubuntu-deno:1.6.2
+  image: denoland/deno:alpine
   stage: test
   tags:
     - docker
   script:
     - cd deno
-    - deno test --allow-net --allow-env --coverage --unstable
+    - deno test --allow-env --coverage --unstable
 
 # Publish package to NPM.
 publish:

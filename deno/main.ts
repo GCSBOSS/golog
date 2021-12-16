@@ -1,7 +1,17 @@
 import { sprintf } from 'https://deno.land/std@0.115.0/fmt/printf.ts'
 
-type LevelSpec = { w: number, c: string };
-type Dict = Record<string, any>;
+type LevelSpec = { w: number, c: string }
+type Dict = Record<string, unknown>
+
+type BasicEntry = {
+    time: Date,
+    level: string,
+    type: string,
+    msg: string,
+    pid: number | null
+}
+
+type ParserFunc = (input: Dict) => Dict
 
 const LEVELS: Record<string, LevelSpec> = {
     debug: { w: 0, c: '\x1b[30;5;1m' },
@@ -17,10 +27,11 @@ function output(entry: Dict){
     // Output friendly log for dev or undfined env
     /* istanbul ignore next */
     if(!env || env === 'development'){
-        const uword = (entry.type == 'event' ? entry.level : entry.type).toUpperCase()
-        entry.time.setMinutes(entry.time.getMinutes() - entry.time.getTimezoneOffset())
-        const utime = entry.time.toISOString().slice(11, -5)
-        console.log(LEVELS[entry.level].c + utime + ': ' + uword + ' - ' + entry.msg + '\x1b[0m')
+        const e = entry as BasicEntry;
+        const uword = (e.type == 'event' ? e.level : e.type).toUpperCase()
+        e.time.setMinutes(e.time.getMinutes() - e.time.getTimezoneOffset())
+        const utime = e.time.toISOString().slice(11, -5)
+        console.log(LEVELS[e.level].c + utime + ': ' + uword + ' - ' + e.msg + '\x1b[0m')
     }
 
     // Output complete JSON log for production and staging
@@ -30,21 +41,25 @@ function output(entry: Dict){
 }
 
 function parseErr({ err }: Dict){
-    if(!(err instanceof Error))
-        err = new Error(err)
+    let theErr: Error;
 
-    const stack = err.stack.split(/[\r\n]+\s*/g)
+    if(err instanceof Error)
+        theErr = err;
+    else
+        theErr = new Error(err as string)
+
+    const stack = theErr.stack?.split(/[\r\n]+\s*/g)
     const env = Deno.env.get('ENV')
 
     return {
         err: null,
-        code: err.code,
-        class: err.constructor.name,
-        message: err.message,
-        stack: stack.slice(1, -1),
+        // code: theErr.code,
+        class: theErr.constructor.name,
+        message: theErr.message,
+        stack: stack?.slice(1, -1),
         msg: !env || env === 'development'
-            ? err.stack
-            : stack[0] + ' ' + stack[1]
+            ? theErr.stack
+            : stack?.[0] + ' ' + stack?.[1]
     }
 }
 
@@ -55,15 +70,15 @@ type GoLogConf = {
     except?: string | string[]
 }
 
-export default class GoLog implements Dict {
+export default class GoLog {
 
-    parsers: Dict = { err: parseErr }
+    parsers: Record<string, ParserFunc> = { err: parseErr }
     private level: string
     private only: Set<string>
     private except: Set<string>
     private defaults: Dict
 
-    private log(level: string, ...args: any[]){
+    private log(level: string, ...args: unknown[]){
 
         const entry = {
             ...this.defaults,
@@ -71,8 +86,8 @@ export default class GoLog implements Dict {
         }
 
         const badLevel = LEVELS[this.level].w > LEVELS[level].w
-        const badType = this.except.has(entry.type) ||
-            this.only.size > 0 && !this.only.has(entry.type)
+        const badType = this.except.has(entry.type as string) ||
+            this.only.size > 0 && !this.only.has(entry.type as string)
         if(badType || badLevel)
             return false
 
@@ -81,11 +96,11 @@ export default class GoLog implements Dict {
         return entry
     }
 
-    debug(...args: any[]){ return this.log('debug', ...args) }
-    info(...args: any[]){ return this.log('info', ...args) }
-    warn(...args: any[]){ return this.log('warn', ...args) }
-    error(...args: any[]){ return this.log('error', ...args) }
-    fatal(...args: any[]){ return this.log('fatal', ...args) }
+    debug(...args: unknown[]){ return this.log('debug', ...args) }
+    info(...args: unknown[]){ return this.log('info', ...args) }
+    warn(...args: unknown[]){ return this.log('warn', ...args) }
+    error(...args: unknown[]){ return this.log('error', ...args) }
+    fatal(...args: unknown[]){ return this.log('fatal', ...args) }
 
     constructor(conf: false | GoLogConf = {}){
         if(!conf)
@@ -96,16 +111,16 @@ export default class GoLog implements Dict {
         this.defaults = conf.defaults || {}
     }
 
-    addParser(key: string, parser: (d: Dict) => void){
+    addParser(key: string, parser: ParserFunc){
         this.parsers[key] = parser
     }
 
-    private getEntry(level: string, args: any[]){
-        const data = typeof args[0] == 'object' ? args.shift() : {}
+    private getEntry(level: string, args: unknown[]): BasicEntry{
+        const data = typeof args[0] == 'object' ? args.shift() as Dict : {}
         args[0] = args[0] || ''
-        let msg = sprintf(args[0], ...args.slice(1).map(a => String(a)))
+        let msg = sprintf(args[0] as string, ...args.slice(1).map(a => String(a)))
 
-        const type = data.type || 'event'
+        const type = data.type as string || 'event'
 
         /* istanbul ignore next */
         const pid = Deno.pid != 1 ? Deno.pid : null
@@ -113,7 +128,7 @@ export default class GoLog implements Dict {
         for(const key in this.parsers)
             key in data && Object.assign(data, this.parsers[key](data))
 
-        msg = msg || data.msg
+        msg = msg || String(data.msg);
         return { level, type, ...data, msg, pid, time: new Date() }
     }
 
