@@ -44,7 +44,7 @@ lint-deno:
    - docker
  script:
    - cd deno
-   - deno lint --unstable --ignore=test.js
+   - deno lint --unstable
 
 test-deno:
   coverage: '/(\d+\.\d+\%)/'
@@ -54,7 +54,8 @@ test-deno:
     - docker
   script:
     - cd deno
-    - deno test --allow-env --coverage --unstable
+    - deno test --coverage=coverage --unstable --allow-env
+    - deno coverage --unstable coverage
 
 # Publish package to NPM.
 publish:

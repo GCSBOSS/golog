@@ -1,13 +1,11 @@
 
 import Logger from './main.ts'
 import { assert, assertEquals } from 'https://deno.land/std/testing/asserts.ts'
-import { serve } from 'https://deno.land/std@0.83.0/http/server.ts'
 
 Deno.env.set('ENV', 'testing')
 
-var log = new Logger()
-
 Deno.test('Logging - Should log appropriate objects according to log level', function(){
+    const log = new Logger()
     assertEquals(log.debug().level, 'debug')
     assertEquals(log.info().level, 'info')
     assertEquals(log.warn().level, 'warn')
@@ -16,30 +14,31 @@ Deno.test('Logging - Should log appropriate objects according to log level', fun
 })
 
 Deno.test('Logging - Should printf format message with input arguments', function(){
-    assertEquals(log.debug('a b %s d %s', 'c', 'e').msg, 'a b c d e')
+    assertEquals(new Logger().debug('a b %s d %s', 'c', 'e').msg, 'a b c d e')
 })
 
 Deno.test('Logging - Should assign first object argument properties to final log entry', function(){
-    let e = log.info({ a: 1, b: 2 })
+    const e = new Logger().info({ a: 1, b: 2 })
     assertEquals(e.a, 1)
     assertEquals(e.b, 2)
 })
 
 Deno.test('Logging - Should include entry type', function(){
+    const log = new Logger()
     assertEquals(log.warn().type, 'event')
     assertEquals(log.error({ type: 'foobar' }).type, 'foobar')
 })
 
 Deno.test('Auto-Parsing - Should parse error objects', function(){
-    let log = new Logger()
+    const log = new Logger()
     assert(Array.isArray(log.warn({ err: new Error('Foobar') }).stack))
     assert(Array.isArray(log.info({ err: 'My Error' }).stack))
 })
 
 Deno.test('Auto-Parsing - Should execute added parsers', function(){
-    let log = new Logger()
+    const log = new Logger()
     log.addParser('foo', () => ({ foobar: true }))
-    let e = log.info({ foo: {} })
+    const e = log.info({ foo: {} })
     assert(e.foobar)
 })
 
@@ -48,8 +47,7 @@ Deno.test('Options - Should not log when entry level is below conf level [level]
 })
 
 Deno.test('Options - Should set defaults values for all entries [defaults]', function(){
-    let log = new Logger({ defaults: { a: 'foo', b: 'bar' } })
-    let e = log.info({ a: 1 })
+    const e = new Logger({ defaults: { a: 'foo', b: 'bar' } }).info({ a: 1 })
     assertEquals(e.a, 1)
     assertEquals(e.b, 'bar')
 })
@@ -59,13 +57,13 @@ Deno.test('Options - Should not log anything when conf is FALSE', function(){
 })
 
 Deno.test('Options - Should only log selected types [only]', function(){
-    let log = new Logger({ only: 'a' })
+    const log = new Logger({ only: 'a' })
     assert(log.debug({ type: 'a' }))
     assert(!log.debug({ type: 'b' }))
 })
 
 Deno.test('Options - Should not log filtered types [except]', function(){
-    let log = new Logger({ except: [ 'a', 'c' ] })
+    const log = new Logger({ except: [ 'a', 'c' ] })
     assert(!log.debug({ type: 'a' }))
     assert(log.debug({ type: 'b' }))
     assert(!log.debug({ type: 'c' }))
